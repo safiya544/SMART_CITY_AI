@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>AI Smart City Operations</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <style>
+        :root {
+            --primary: #2563eb;
+            --secondary: #0f172a;
+            --bg: #f8fafc;
+            --card: rgb(46, 68, 190);
+            --border: #e5e7eb;
+            --success: #16a34a;
+            --warning: #f59e0b;
+            --danger: #dc2626;
+        }
+
+        * {
+            box-sizing: border-box;
+            font-family: "Segoe UI", system-ui, sans-serif;
+        }
+
+        body {
+            margin: 0;
+            background: var(--bg);
+            color: var(--secondary);
+        }
+
+        header {
+            background: linear-gradient(90deg, #1e3a8a, #2563eb);
+            color: white;
+            padding: 20px;
+            text-align: center;
+            font-size: 1.6rem;
+            font-weight: 600;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: auto;
+            padding: 30px;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 25px;
+        }
+
+        .card {
+            background: var(--card);
+            border-radius: 10px;
+            padding: 20px;
+            border: 1px solid var(--border);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.05);
+        }
+
+        .card h2 {
+            margin-top: 0;
+            font-size: 1.2rem;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 10px;
+        }
+
+        label {
+            font-weight: 600;
+            margin-top: 12px;
+            display: block;
+        }
+
+        input, textarea {
+            width: 100%;
+            padding: 10px;
+            margin-top: 6px;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+            font-size: 0.95rem;
+        }
+
+        textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        .actions {
+            margin-top: 20px;
+            display: flex;
+            gap: 15px;
+        }
+
+        button {
+            flex: 1;
+            padding: 12px;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.95rem;
+        }
+
+        .analyze {
+            background: var(--primary);
+            color: white;
+        }
+
+        .simulate {
+            background: #0ea5e9;
+            color: white;
+        }
+
+        button:hover {
+            opacity: 0.9;
+        }
+
+        pre {
+            background: #07175e00;
+            color: #ffffff;
+            padding: 15px;
+            border-radius: 8px;
+            max-height: 400px;
+            overflow: auto;
+            font-size: 0.85rem;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 5px 12px;
+            border-radius: 999px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+
+        .HIGH { background: var(--danger); color: white; }
+        .MEDIUM { background: var(--warning); color: black; }
+        .LOW { background: var(--success); color: white; }
+
+        footer {
+            text-align: center;
+            padding: 15px;
+            font-size: 0.85rem;
+            color: #64748b;
+        }
+
+        @media (max-width: 900px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<header>🏙️ AI Smart City Operations</header>
+
+<div class="container">
+    <div class="grid">
+
+        <!-- INPUT CARD -->
+        <div class="card">
+            <h2>City Inputs</h2>
+
+            <label>Traffic Level (1–10)</label>
+            <input id="traffic" type="number" min="1" max="10" value="5">
+
+            <label>Weather Condition</label>
+            <input id="weather" placeholder="heavy rain">
+
+            <label>Incident Type</label>
+            <input id="incident" placeholder="accident">
+
+            <label>Citizen Complaints (one per line)</label>
+            <textarea id="complaints"></textarea>
+
+            <div class="actions">
+                <button class="analyze" onclick="sendRequest('/analyze-city')">Analyze City</button>
+                <button class="simulate" onclick="sendRequest('/simulate')">Run Simulation</button>
+            </div>
+        </div>
+
+        <!-- OUTPUT CARD -->
+        <div class="card">
+            <h2>Decision Output</h2>
+            <div id="riskBadge"></div>
+            <pre id="output">No analysis yet.</pre>
+        </div>
+
+    </div>
+</div>
+
+<footer>
+    AI Smart City Platform · Multi-Agent Decision System
+</footer>
+
+<script>
+    async function sendRequest(endpoint) {
+        const payload = {
+            traffic_level: Number(document.getElementById("traffic").value),
+            weather: document.getElementById("weather").value,
+            incident: document.getElementById("incident").value,
+            complaints: document.getElementById("complaints").value.split("\n")
+        };
+
+        document.getElementById("output").textContent = "Processing...";
+        document.getElementById("riskBadge").innerHTML = "";
+
+        try {
+            const res = await fetch(`http://localhost:8000${endpoint}`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload)
+            });
+
+            const data = await res.json();
+
+            const risk =
+                data.final_risk_level ||
+                data.predicted_outcome?.final_risk_level;
+
+            if (risk) {
+                document.getElementById("riskBadge").innerHTML =
+                    `<span class="badge ${risk}">${risk} RISK</span>`;
+            }
+
+            document.getElementById("output").textContent =
+                JSON.stringify(data, null, 2);
+
+        } catch (err) {
+            document.getElementById("output").textContent =
+                "Error connecting to backend.";
+        }
+    }
+</script>
+
+</body>
+</html>
